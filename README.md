@@ -12,7 +12,7 @@ To root this phone on Windows, download Odin from https://odindownload.com/downl
 
 ![Odin rooting screenshot](windows-odin.jpeg)
 
-### Quick root procedure (simplified, in English)
+### Quick root procedure
 
 1. Turn the phone off.
 2. Press and hold Volume Down, Home, and Power together.
