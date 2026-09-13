@@ -4,7 +4,7 @@ Scripts for debloating and rooting the Samsung Galaxy SM-G386F.
 
 ## Root SM-G386F
 
-This repository contains a set of files and scripts for the Samsung Galaxy SM-G386F.
+To root this phone on Windows, download Odin from https://odindownload.com/download/ and use the root archive `sm-g386f_root.tar` with Odin.
 
 ### Screenshots
 
@@ -24,6 +24,16 @@ This repository contains a set of files and scripts for the Samsung Galaxy SM-G3
 8. Wait for the process to finish.
 9. When Odin shows a PASS message, the phone will reboot.
 10. After reboot, verify the device is rooted: adb shell and su to get #
+
+### Check the archive is legitimate
+
+If you do not have the original MD5, inspect the tar first:
+
+```bash
+tar -tf sm-g386f_root.tar
+```
+
+A valid Odin tar usually contains partition images such as `recovery.img` and `cache.img`.
 
 ### Scripts
 
