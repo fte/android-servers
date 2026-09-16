@@ -1,4 +1,4 @@
-# android-servers
+# android-sm-g386f
 
 Technical notes and scripts for the Samsung Galaxy Core LTE SM-G386F on Android 4.2.2.
 
