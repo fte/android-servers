@@ -202,6 +202,92 @@ com.sec.esdk.elm
 #com.google.android.partnersetup
 # ---- end of list ----
 
+# ==== REMOVAL LOG - wave 2 (2026-09-14, manual rm once 'review' showed wave 1 done) ====
+# Removed from /system/app (APK + matching .odex), owners verified via `pm path`:
+#   com.android.email                       SecEmail_J.apk             ~17 MB
+#   com.android.exchange                    SecExchange.apk             ~8 MB
+#   com.android.browser                     SecBrowser.apk              ~6 MB  (links open in Chrome now)
+#   com.sec.android.app.launcher            SecLauncher3.apk            ~5 MB  ⚠️ SEE BELOW - was restored
+#   com.sec.android.app.hwmoduletest        HwModuleTest.apk
+#   com.sec.android.app.factorykeystring    FactoryKeystring_FB.apk
+#   com.sec.android.AutoPreconfig           AutoPreconfig.apk
+#   com.sec.android.Preconfig               Preconfig.apk
+#   com.sec.android.app.sysscope            SysScope.apk       (chattr -i needed)
+#   com.sec.android.fotaclient              FotaClient.apk     (chattr -i needed; OTA dead, device EOL)
+#   com.sec.android.app.mt                  MobileTrackerEngineTwo.apk (chattr -i needed)
+#   com.sec.android.app.parser              SCParser.apk       (chattr -i needed)
+#   com.sec.android.app.tmserver            TMServerApp.apk    (chattr -i needed)
+#   com.sec.android.app.nfctest             NfcTest.apk
+#   com.sec.android.app.wlantest            WlanTest.apk
+#   com.sec.android.app.bluetoothtest       BluetoothTest.apk
+#   com.sec.android.app.servicemodeapp      serviceModeApp_FB.apk
+#   com.sec.android.RilServiceModeApp       ServiceModeApp_RIL.apk
+#   com.sec.android.app.DataCreate          AutomationTest_FB.apk
+#
+# Removed from /system/lib (~95 MB, owner apps already gone after wave 1):
+#   libpolaris*                             Polaris Office viewer
+#   libASP15_* libcupsgs.so                 AllShare / CUPS print backends
+#   libfacerecognition.so libdmcFaceEngine.so
+#   libdmcFaceEngine3GVT.so libfrsdk.so      face recognition
+#   libgoogle_recognizer_jni_l.so
+#   libpatts_engine_jni_api_ub.210030011.so  voice recognition
+#   libsamsungtts.so libvideochat_jni.so
+#   libmoviemaker-jni.so libarcpicbest.so
+#   liblifevibes_mediashare_hw_jni.so
+#   liblifevibes_mediashare_sw_jni.so
+#   libswiftkeysdk-java.so                  SwiftKey SDK - ⚠️ RESTORED 2026-09-14:
+#              needed by the Samsung keyboard (SamsungIME/DIOTEK IME, Java-side
+#              System.loadLibrary). Deleting it = 'Samsung keyboard has stopped'
+#              crash-loop (UnsatisfiedLinkError on com.touchtype_fluency.SwiftKeySDK).
+#   libSamsungPDLComposer_MD2.so             printer driver
+#
+# KEPT ON PURPOSE:
+#   /system/app/ChromeWithBrowser.apk - dual-registered with the updated Chrome
+#   in /data/app (dumpsys shows both codePaths). Deleting the base APK can make
+#   PackageManager drop Chrome entirely at boot, and the 4.2.2-era Play Store
+#   may no longer serve a compatible build. 12 MB not worth the risk.
+#
+# Quirk learned: some Samsung security APKs survive `rm` even on a rw /system
+#   until `busybox chattr -i <file>` runs first - even when lsattr shows no i
+#   flag (seen on FotaClient, MobileTrackerEngineTwo, SCParser, TMServerApp).
+#
+# ==== BOOT BROKE TWICE - lessons (2026-09-14) ====
+# 1. libdmcFaceEngine.so is NOT an orphan! Despite its name it is linked by
+#    libseccameracore.so -> libsecface.so -> libcameraservice.so -> mediaserver.
+#    Deleting it made mediaserver crash-loop (init 'media' exit 255), so no
+#    media.player/audio_policy services -> boot stalls forever with logcat
+#    'Waiting for service media.player'. Restored from stock system.img.
+#    LESSON: before deleting any /system/lib, walk DT_NEEDED of /system/bin
+#    execs recursively (see walk-deps.py approach), never trust the name.
+# 2. SecLauncher3 (TouchWiz) IS the real home screen. 'com.google.android.launcher'
+#    on this device is only a redirect STUB (version 1.3.large, StubApp +
+#    LauncherRedirectionProvider, no HOME activity). Removing TouchWiz left the
+#    system with zero android.intent.category.HOME activities -> bootanim never
+#    exits, mFocusedActivity stays null although 'System now ready' is logged.
+#    Restored SecLauncher3.apk + matching .odex from stock system.img.
+#    LESSON: never remove the active launcher on 4.2.2 without verifying a real
+#    HOME activity exists: dumpsys package <pkg> must list a MAIN/HOME filter.
+# Diagnosis flow that worked: getprop sys.boot_completed / init.svc.media;
+#   run /system/bin/mediaserver by hand to see linker errors; grep logcat for
+#   'Waiting for service'; check mFocusedActivity for HOME resolution.
+# 2b. walk-deps.py only walks DT_NEEDED of /system/bin executables. Libraries
+#    loaded from Java via System.loadLibrary() inside an APK (like the Samsung
+#    keyboard loading libswiftkeysdk-java.so) are INVISIBLE to it. Before
+#    deleting a lib, also check: grep the pulled /system/app APKs for the lib
+#    base name, or better: keep every lib whose name matches no obvious owner
+#    unless proven otherwise.
+# 3. Symptom of a missing IME lib: 'Clavier Samsung s'est arreté' popup loop.
+#    Crash signature in logcat: UnsatisfiedLinkError while initializing
+#    Lcom/touchtype_fluency/SwiftKeySDK; stack from
+#    com.diotek.ime...InputControllerImpl.initInputEngine.
+#    Fix = restore the lib, then reopen a text field; verify with
+#    'dumpsys input_method' (curSession=SessionState{...} must appear).
+# ==== end lessons ====
+#
+# Result (final, incl. restored launcher+lib): /system 758M used / 714 MB free
+#   (was 1.34G used / 99 MB free).  /data: 4.59 GB free.
+# ==== end removal log ====
+
 installed() {
 	out=$(pm path "$1" 2>/dev/null)
 	case "$out" in
